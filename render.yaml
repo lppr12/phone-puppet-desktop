@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: phonepuppet-desktop
+    env: docker
+    plan: free
+    buildCommand: ./mvnw clean package -DskipTests
+    startCommand: java -jar target/*.jar
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: SERVER_PORT
+        value: 8080
+      - key: JAVA_OPTS
+        value: -Xmx512m -Xms256m
+    healthCheckPath: /
+    autoDeploy: true
