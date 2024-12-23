@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phone Puppet Web</title>
+    <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"></script>
+    <link href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" rel="stylesheet"/>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            margin-top: 20px;
+            color: #333;
+        }
+
+        form {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #fff;
+            width: 300px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        form label {
+            font-size: 14px;
+            color: #555;
+        }
+
+        form input {
+            margin-bottom: 10px;
+            padding: 8px;
+            width: calc(100% - 16px);
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #log {
+            margin-top: 20px;
+            white-space: pre-wrap;
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 10px;
+            width: 90%;
+            max-width: 800px;
+            overflow-y: auto;
+            height: 150px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        #screenShare {
+            margin-top: 20px;
+            width: 90%;
+            max-width: 800px;
+            height: 500px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+       
+        .audio-button {
+            margin: 10px;
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .audio-button:disabled {
+            background-color: #45a049;
+            cursor: default;
+        }
+        
+        .audio-meter {
+            width: 0%;
+            height: 20px;
+            background-color: #4CAF50;
+            margin: 10px;
+            border-radius: 10px;
+            transition: width 0.1s ease-in-out;
+        }
+        
+        .audio-controls {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .audio-controls input[type="range"] {
+            width: 100%;
+        }
+        
+
+
+
+        
+        #screenShare {
+            margin-top: 20px;
+            width: 90%;
+            max-width: 800px;
+            height: 80vh;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        #screenShare video, #screenShare img {
+            position: absolute;
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+        
+
+        #map-container {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80vw;
+            height: 80vh;
+            z-index: 1000;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        }
+        
+        #map-toggle {
+            position: fixed;
+            bottom: 0px;
+            right: 20px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            z-index: 999;
+            background-color:rgba(248, 2, 2, 0);
+        }
+        #map-toggle {
+            width: 48px;
+            height: 48px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            padding: 0;
+        }
+        
+        
+        #map-toggle:hover {
+            transform: scale(1.2);
+        }
+        
+    </style>
+</head>
+<body>
+    <h1>Phone Puppet - Web</h1>
+    <div style="position: fixed; left: 20px; top: 50%; transform: translateY(-50%);">
+        <form id="connectForm">
+            <label for="phoneIp">Phone IP:</label>
+            <input type="text" id="phoneIp" name="phoneIp" placeholder="e.g., 192.168.1.100" required><br>
+            <label for="port">Port:</label>
+            <input type="number" id="port" name="port" value="5050" required><br>
+            <button type="submit">Connect and Send Command</button>
+            
+            <div class="audio-controls">
+                <input type="range" min="0" max="1" step="0.1" value="1" oninput="setVolume(this.value)">
+                <label>Volume</label>
+            </div>
+            
+        </form>
+        <pre id="log">Logs will appear here...</pre>
+    </div>
+    <div id="screenShare" style="position: fixed; right: 20px; top: 50%; transform: translateY(-50%);">Screen share will be displayed here...</div>
+    
+    <button id="map-toggle"></button>
+    <div id="map-container"></div>
+
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+    <script>
+        
+        const form = document.getElementById('connectForm');
+        const log = document.getElementById('log');
+        const screenShare = document.getElementById('screenShare');
+        let peerConnection;
+        let webSocket;
+        let audioContext;
+        let gainNode;
+        let audioStream;
+        let globalAudioStream;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        let currentOrientation = 'portrait';
+
+        function handleScreenDimensions(message) {
+            if (message.type === 'screen_dimensions') {
+                phoneScreenDimensions.width = message.width;
+                phoneScreenDimensions.height = message.height;
+                currentOrientation = message.orientation;
+                
+                const screenContainer = document.getElementById('screenShare');
+                if (currentOrientation === 'landscape') {
+                    screenContainer.style.width = '90vw';
+                    screenContainer.style.height = '50vh';
+                } else {
+                    screenContainer.style.width = '50vw';
+                    screenContainer.style.height = '80vh';
+                }
+                updateScaleForImage();
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+             // Add this inside your script tag, after the existing code
+        // Screen control implementation
+
+        let scale = {x: 1, y: 1};
+        let phoneScreenDimensions = {
+            width: 1080,
+            height: 2400
+        };
+        
+        function updateScale(containerWidth, containerHeight) {
+            scale.x = phoneScreenDimensions.width / containerWidth;
+            scale.y = phoneScreenDimensions.height / containerHeight;
+        }
+        
+        function convertCoordinates(webX, webY, element) {
+            const rect = element.getBoundingClientRect();
+            const image = element;
+            
+            const imageAspect = phoneScreenDimensions.width / phoneScreenDimensions.height;
+            const containerAspect = rect.width / rect.height;
+            
+            let displayWidth, displayHeight;
+            let offsetX = 0, offsetY = 0;
+            
+            if (currentOrientation === 'landscape') {
+                if (containerAspect < imageAspect) {
+                    displayWidth = rect.width;
+                    displayHeight = rect.width / imageAspect;
+                    offsetY = (rect.height - displayHeight) / 2;
+                } else {
+                    displayHeight = rect.height;
+                    displayWidth = rect.height * imageAspect;
+                    offsetX = (rect.width - displayWidth) / 2;
+                }
+            } else {
+                if (containerAspect > imageAspect) {
+                    displayHeight = rect.height;
+                    displayWidth = rect.height * imageAspect;
+                    offsetX = (rect.width - displayWidth) / 2;
+                } else {
+                    displayWidth = rect.width;
+                    displayHeight = rect.width / imageAspect;
+                    offsetY = (rect.height - displayHeight) / 2;
+                }
+            }
+            
+            const normalizedX = (webX - rect.left - offsetX) / displayWidth;
+            const normalizedY = (webY - rect.top - offsetY) / displayHeight;
+            
+            return {
+                x: Math.max(0, Math.min(Math.round(normalizedX * phoneScreenDimensions.width), phoneScreenDimensions.width)),
+                y: Math.max(0, Math.min(Math.round(normalizedY * phoneScreenDimensions.height), phoneScreenDimensions.height))
+            };
+        }
+        
+        
+        let isPointerDown = false;
+        let lastCoords = null;
+        
+        function attachEventListeners() {
+            const screenImage = document.getElementById('screenImage');
+            if (!screenImage) return;
+        
+            screenImage.addEventListener('mousedown', (e) => {
+                isPointerDown = true;
+                const coords = convertCoordinates(e.clientX, e.clientY, e.target);
+                lastCoords = coords;
+                sendTouchEvent('down', coords.x, coords.y);
+            });
+        
+            screenImage.addEventListener('mousemove', (e) => {
+                if (!isPointerDown) return;
+                
+                const coords = convertCoordinates(e.clientX, e.clientY, e.target);
+                // Remove the threshold check to ensure all move events are sent
+                sendTouchEvent('move', coords.x, coords.y);
+                lastCoords = coords;
+            });
+        
+            screenImage.addEventListener('mouseup', (e) => {
+                if (!isPointerDown) return;
+                isPointerDown = false;
+                const coords = convertCoordinates(e.clientX, e.clientY, e.target);
+                sendTouchEvent('up', coords.x, coords.y);
+                lastCoords = null;
+            });
+        
+            screenImage.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                isPointerDown = true;
+                const touch = e.touches[0];
+                const coords = convertCoordinates(touch.clientX, touch.clientY, e.target);
+                lastCoords = coords;
+                sendTouchEvent('down', coords.x, coords.y);
+            });
+        
+            screenImage.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (!isPointerDown) return;
+                
+                const touch = e.touches[0];
+                const coords = convertCoordinates(touch.clientX, touch.clientY, e.target);
+                // Remove the threshold check to ensure all move events are sent
+                sendTouchEvent('move', coords.x, coords.y);
+                lastCoords = coords;
+            });
+        
+            screenImage.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                if (!isPointerDown) return;
+                isPointerDown = false;
+                if (lastCoords) {
+                    sendTouchEvent('up', lastCoords.x, lastCoords.y);
+                }
+                lastCoords = null;
+            });
+        
+            screenImage.addEventListener('contextmenu', (e) => e.preventDefault());
+            screenImage.addEventListener('dragstart', (e) => e.preventDefault());
+        }
+        
+        function sendTouchEvent(action, x, y) {
+            if (webSocket && webSocket.readyState === WebSocket.OPEN) {
+                const touchEvent = {
+                    type: 'touch',
+                    action: action,
+                    x: x,
+                    y: y,
+                    timestamp: Date.now()
+                };
+                console.log('Sending touch event:', touchEvent);
+                webSocket.send(JSON.stringify(touchEvent));
+            }
+        }
+        
+        // Call attachEventListeners after each image update
+        const observer = new MutationObserver(() => {
+            attachEventListeners();
+        });
+        
+        observer.observe(screenShare, { childList: true });
+        
+        // Update scale when image dimensions change
+        function updateScaleForImage() {
+            const screenImage = document.getElementById('screenImage');
+            if (screenImage) {
+                updateScale(screenImage.clientWidth, screenImage.clientHeight);
+            }
+        }
+        
+        window.addEventListener('resize', updateScaleForImage);
+        updateScaleForImage();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        let audioElement;
+
+        function initAudio() {
+            audioElement = new Audio();
+            audioElement.autoplay = true;
+            
+            // Initialize audio context directly
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            audioContext.resume();
+            
+            // Set up gain node for volume control
+            gainNode = audioContext.createGain();
+            gainNode.connect(audioContext.destination);
+            
+            // Connect audio stream if already available
+            if (globalAudioStream) {
+                audioElement.srcObject = globalAudioStream;
+                audioElement.play();
+            }
+        }
+        
+        
+        
+        function connectAudioStream(stream) {
+            if (!audioContext) return;
+            
+            const source = audioContext.createMediaStreamSource(stream);
+            const analyser = audioContext.createAnalyser();
+            analyser.fftSize = 2048;
+            
+            source.connect(analyser);
+            source.connect(gainNode);
+            
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            
+            function updateAudioMeter() {
+                analyser.getByteFrequencyData(dataArray);
+                const average = dataArray.reduce((a, b) => a + b) / bufferLength;
+                const level = Math.min(100, Math.round((average / 255) * 100));
+                
+                const meterElement = document.querySelector('.audio-meter');
+                if (meterElement) {
+                    meterElement.style.width = `${level}%`;
+                    meterElement.style.backgroundColor = `hsl(${120 - level}, 70%, 50%)`;
+                }
+                
+                requestAnimationFrame(updateAudioMeter);
+            }
+            
+            updateAudioMeter();
+        }
+        
+
+        initAudio();
+
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const phoneIp = document.getElementById('phoneIp').value;
+            const port = document.getElementById('port').value;
+
+            log.textContent += `Attempting to connect to ${phoneIp}:${port}...\n`;
+
+            try {
+                const response = await fetch('/api/phone/connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phoneIp, port }),
+                });
+
+                const result = await response.text();
+                log.textContent += `Server response: ${result}\n`;
+                initializeWebRTC(phoneIp);
+            } catch (error) {
+                log.textContent += `Error: ${error.message}\n`;
+            }
+        });
+
+        function initializeWebRTC(phoneIp) {
+            const configuration = {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ]
+            };
+        
+            peerConnection = new RTCPeerConnection(configuration);
+            
+            // Create elements
+            const videoElement = document.createElement('video');
+            
+            videoElement.autoplay = true;
+            videoElement.playsInline = true;
+            // Add elements to page
+            screenShare.innerHTML = '';
+            screenShare.appendChild(videoElement);
+          
+            peerConnection.ontrack = (event) => {
+                console.log('Track received:', event.track.kind, event.track);
+                
+                if (event.streams && event.streams[0]) {
+                    const stream = event.streams[0];
+                    
+                    if (event.track.kind === 'audio') {
+                        globalAudioStream = new MediaStream([event.track]);
+                        if (audioElement) {
+                            audioElement.srcObject = globalAudioStream;
+                            audioElement.play();
+                        }
+                    } else if (event.track.kind === 'video') {
+                        videoElement.srcObject = stream;
+                        videoElement.play().catch(e => console.error('Video playback error:', e));
+                    }
+                }
+            };
+                
+
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    sendToSignalingServer({
+                        type: 'candidate',
+                        candidate: event.candidate.candidate,
+                        sdpMid: event.candidate.sdpMid,
+                        sdpMLineIndex: event.candidate.sdpMLineIndex
+                    });
+                }
+            };
+
+            peerConnection.onconnectionstatechange = (event) => {
+                log.textContent += `WebRTC Connection State: ${peerConnection.connectionState}\n`;
+            };
+
+            connectToSignalingServer(phoneIp);
+        }
+
+        function connectToSignalingServer(phoneIp) {
+            const wsUrl = `ws://${phoneIp}:8080/webrtc`;
+            console.log('Connecting to WebSocket:', wsUrl);
+            
+            webSocket = new WebSocket(wsUrl);
+
+            webSocket.onopen = () => {
+                log.textContent += 'Connected to signaling server\n';
+                console.log('WebSocket connection established');
+                sendToSignalingServer({
+                    type: 'request_location'
+                });
+            };
+
+
+
+
+
+
+
+
+
+
+
+
+
+            webSocket.onmessage = async (event) => {
+                if (event.data.startsWith('{')) {
+                    const message = JSON.parse(event.data);
+                    if (message.type === 'screen_dimensions') {
+                        handleScreenDimensions(message);
+                    } else {
+                        await handleSignalingMessage(message);
+                    }
+                } else if (event.data.startsWith('data:image')) {
+                    const imageElement = document.createElement('img');
+                    imageElement.id = 'screenImage';
+                    imageElement.src = event.data;
+                    imageElement.style.zIndex = '1';
+                    
+                    imageElement.onload = () => {
+                        const aspectRatio = imageElement.naturalWidth / imageElement.naturalHeight;
+                        const isLandscape = aspectRatio > 1;
+                        
+                        if (isLandscape) {
+                            imageElement.style.width = '100%';
+                            imageElement.style.height = 'auto';
+                        } else {
+                            imageElement.style.width = 'auto';
+                            imageElement.style.height = '100%';
+                        }
+                    };
+                    
+                    screenShare.innerHTML = '';
+                    screenShare.appendChild(imageElement);
+                    attachEventListeners();
+                }
+                if (event.data.startsWith('{')) {
+                    const message = JSON.parse(event.data);
+                    if (message.type === 'location') {
+                        updateMapLocation(message.latitude, message.longitude);
+                    } else if (message.type === 'screen_dimensions') {
+                        handleScreenDimensions(message);
+                    } else {
+                        await handleSignalingMessage(message);
+                    }
+                }
+            };
+            
+            
+
+
+
+
+
+
+
+
+            
+
+            webSocket.onerror = (error) => {
+                console.error('WebSocket Error:', error);
+                log.textContent += `WebSocket Error: ${error}\n`;
+                setTimeout(() => connectToSignalingServer(phoneIp), 3000);
+            };
+
+            webSocket.onclose = () => {
+                log.textContent += 'WebSocket connection closed\n';
+            };
+        }
+
+        async function handleSignalingMessage(message) {
+            try {
+                switch (message.type) {
+                    case 'offer':
+                        await peerConnection.setRemoteDescription(new RTCSessionDescription(message));
+                        const answer = await peerConnection.createAnswer({
+                            offerToReceiveVideo: true,
+                            offerToReceiveAudio: true
+                        });
+                        
+                        // Ensure video is enabled
+                        answer.sdp = answer.sdp
+                        .replace(/a=inactive/g, 'a=recvonly')
+                        .replace(/a=sendonly/g, 'a=sendrecv');
+                        
+                       // console.log('Created answer:', answer.sdp);
+                        await peerConnection.setLocalDescription(answer);
+                        sendToSignalingServer({
+                            type: 'answer',
+                            sdp: answer.sdp
+                        });
+                        break;
+
+                    case 'candidate':
+                        if (message.candidate) {
+                            const candidate = new RTCIceCandidate({
+                                candidate: message.candidate,
+                                sdpMid: message.sdpMid,
+                                sdpMLineIndex: message.sdpMLineIndex
+                            });
+                            await peerConnection.addIceCandidate(candidate);
+                        }
+                        break;
+
+                    case 'error':
+                        log.textContent += `Signaling Error: ${message.error}\n`;
+                        break;
+                }
+            } catch (error) {
+                console.error('Error in handleSignalingMessage:', error);
+                log.textContent += `Error handling message: ${error}\n`;
+            }
+        }
+
+
+       
+
+
+        
+        function setVolume(value) {
+            if (gainNode) {
+                gainNode.gain.value = parseFloat(value);
+            }
+        }
+
+        function sendToSignalingServer(message) {
+            if (webSocket && webSocket.readyState === WebSocket.OPEN) {
+                webSocket.send(JSON.stringify(message));
+            }
+        }
+
+
+
+
+
+
+
+        let map;
+        let locationMarker;
+        let lastKnownLocation = null;
+        function initializeMap() {
+            map = L.map('map-container');
+            L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            
+            // Set default view (will be updated when we receive coordinates)
+            map.setView([0, 0], 2);
+        }
+        function updateMapLocation(latitude, longitude) {
+            if (!map) {
+                initializeMap();
+            }
+            
+            const position = L.latLng(latitude, longitude);
+            lastKnownLocation = position;
+            
+            if (!locationMarker) {
+                locationMarker = L.marker(position).addTo(map);
+                map.setView(position, 16);
+            } else {
+                locationMarker.setLatLng(position);
+                // Smooth animation for marker movement
+                map.panTo(position, {
+                    animate: true,
+                    duration: 0.5
+                });
+            }
+            
+            // Log successful update
+            console.log('Location updated:', latitude, longitude);
+        }
+        
+        // Initialize map when page loads
+        document.addEventListener('DOMContentLoaded', initializeMap);
+
+
+
+        let mapVisible = false;
+        const mapToggle = document.getElementById('map-toggle');
+        const mapContainer = document.getElementById('map-container');
+
+        const mapIcons = {
+            show: 'https://cdn-icons-png.flaticon.com/512/854/854878.png',
+            hide: 'https://cdn-icons-png.flaticon.com/512/2976/2976286.png'
+        };
+        
+        mapToggle.style.backgroundImage = `url(${mapIcons.show})`;
+        
+        mapToggle.addEventListener('click', () => {
+            mapVisible = !mapVisible;
+            mapContainer.style.display = mapVisible ? 'block' : 'none';
+            mapToggle.style.backgroundImage = `url(${mapVisible ? mapIcons.hide : mapIcons.show})`;
+            
+            if (mapVisible && map) {
+                map.invalidateSize();
+                if (locationMarker) {
+                    map.setView(locationMarker.getLatLng(), 16);
+                }
+            }
+        });
+        
+
+
+    </script>
+
+</body>
+</html>

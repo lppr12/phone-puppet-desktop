@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+   <meta charset="utf-8">
+   <title>Glowing Inputs Signup Form UI</title>
+   <link rel="stylesheet" href="/css/signup.css">
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+   <!-- Firebase SDKs -->
+   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+
+<body>
+   <div class="signup-form">
+      <div class="text">SIGNUP</div>
+      <form id="signupForm">
+         <div class="field">
+            <div class="fas fa-user"></div>
+            <input type="text" id="fullName" placeholder="Full Name" required>
+         </div>
+         <div class="field">
+            <div class="fas fa-envelope"></div>
+            <input type="email" id="email" placeholder="Email or Phone" required>
+         </div>
+         <div class="field">
+            <div class="fas fa-lock"></div>
+            <input type="password" id="password" placeholder="Password" required>
+         </div>
+         <div class="field">
+            <div class="fas fa-lock"></div>
+            <input type="password" id="confirmPassword" placeholder="Confirm Password" required>
+         </div>
+         <button type="submit">SIGNUP</button>
+         <div class="link">
+            Already a member?
+            <a href="/login">Login now</a>
+         </div>
+      </form>
+   </div>
+
+   <script>
+      // Firebase configuration
+      const firebaseConfig = {
+         apiKey: "AIzaSyDM_vU0JMIZEbkb_7IJiTZDdChmBLQggmk",
+         authDomain: "loginsignup-b534a.firebaseapp.com",
+         databaseURL: "https://loginsignup-b534a-default-rtdb.firebaseio.com/",
+         projectId: "loginsignup-b534a",
+         storageBucket: "loginsignup-b534a.firebasestorage.app",
+         messagingSenderId: "187472152738",
+         appId: "1:187472152738:web:942c27ca457cc49e2feffb"
+      };
+      // Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+
+      // References to Firebase services
+      const auth = firebase.auth();
+      const database = firebase.database();
+
+      // Signup form logic
+      document.getElementById('signupForm').addEventListener('submit', (e) => {
+         e.preventDefault();
+
+         // Get form values
+         const fullName = document.getElementById('fullName').value;
+         const email = document.getElementById('email').value;
+         const password = document.getElementById('password').value;
+         const confirmPassword = document.getElementById('confirmPassword').value;
+
+         // Validate passwords
+         if (password !== confirmPassword) {
+            alert('Passwords do not match!');
+            return;
+         }
+
+         // Create user with Firebase Authentication
+         auth.createUserWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+               const user = userCredential.user;
+
+               // Store user data in Firebase Realtime Database
+               database.ref('users/' + user.uid).set({
+                  fullName: fullName,
+                  email: email
+               });
+               localStorage.setItem('loggedIn', 'true');
+               alert('Signup successful!');
+               // Redirect to another page or perform additional actions
+               window.location.href = '/index';
+            })
+            .catch((error) => {
+               alert('Error: ' + error.message);
+            });
+      });
+   </script>
+</body>
+
+</html>

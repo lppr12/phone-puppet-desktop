@@ -1,0 +1,7 @@
+com\phonepuppet\desktop\controller\HomeController.class
+com\phonepuppet\desktop\controller\CommandRequest.class
+com\phonepuppet\desktop\PhonePuppetApplication.class
+com\phonepuppet\desktop\controller\PhoneController.class
+com\phonepuppet\desktop\config\WebSocketConfig.class
+com\phonepuppet\desktop\AppLauncher.class
+com\phonepuppet\desktop\App.class
